@@ -11,13 +11,13 @@ public class SignedRenewalInfo {
     private String productID;
 
     @JsonProperty("recentSubscriptionStartDate")
-    private Integer recentSubscriptionStartDate;
+    private Long recentSubscriptionStartDate;
 
     public SignedRenewalInfo() {
 
     }
 
-    public SignedRenewalInfo(String originalTransactionID, String productID, Integer recentSubscriptionStartDate) {
+    public SignedRenewalInfo(String originalTransactionID, String productID, Long recentSubscriptionStartDate) {
         this.originalTransactionID = originalTransactionID;
         this.productID = productID;
         this.recentSubscriptionStartDate = recentSubscriptionStartDate;
@@ -31,7 +31,7 @@ public class SignedRenewalInfo {
         return productID;
     }
 
-    public Integer getRecentSubscriptionStartDate() {
+    public Long getRecentSubscriptionStartDate() {
         return recentSubscriptionStartDate;
     }
 

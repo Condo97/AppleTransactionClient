@@ -3,7 +3,7 @@ package appletransactionclient.http.response.status;
 public class AppStoreStatusResponse {
 
     private String environment, bundleId;
-    private Integer appAppleId;
+    private Long appAppleId;
     private AppStoreStatusResponseSubscriptionGroupIdentifierItem[] data;
 
     public AppStoreStatusResponse() {
@@ -18,7 +18,7 @@ public class AppStoreStatusResponse {
         return bundleId;
     }
 
-    public Integer getAppAppleId() {
+    public Long getAppAppleId() {
         return appAppleId;
     }
 

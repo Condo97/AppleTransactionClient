@@ -13,5 +13,4 @@ public class AppleHttpClient {
         return client;
     }
 
-
 }

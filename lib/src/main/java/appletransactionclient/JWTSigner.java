@@ -17,37 +17,21 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 import java.util.Map;
 
-public class JWTGenerator {
+public class JWTSigner {
 
-    private String jwsPath, issuerID, bundleID, privateKeyID;
+    private String jwsPath, privateKeyID;
 
-    public JWTGenerator(String jwsPath, String issuerID, String bundleID, String privateKeyID) {
+    public JWTSigner(String jwsPath, String privateKeyID) {
         this.jwsPath = jwsPath;
-        this.issuerID = issuerID;
-        this.bundleID = bundleID;
         this.privateKeyID = privateKeyID;
     }
 
-    public String generateJWT() throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeySpecException {
-        byte[] p8Key = Files.readAllBytes(Paths.get(jwsPath));
-
-        // Remove begin and end private key header and footer
-        String p8KeyStringRemovedHeaderFooterText = removeBeginEndPrivateKeyText(new String(p8Key));
-        byte[] p8KeyRemovedHeaderFooterText = p8KeyStringRemovedHeaderFooterText.getBytes();
-
-        PKCS8EncodedKeySpec p8EncodedKeySpec = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(p8KeyRemovedHeaderFooterText));
-
-        ECPrivateKey privateKey = (ECPrivateKey) KeyFactory.getInstance("EC").generatePrivate(p8EncodedKeySpec);
+    public String signJWT(String payload) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        ECPrivateKey privateKey = getPrivateKey();
 
         Algorithm algorithm = Algorithm.ECDSA256(null, privateKey);
         String jwt = JWT.create()
-                .withPayload(Map.of(
-                        "iss", issuerID,
-                        "iat", System.currentTimeMillis() / 1000l,
-                        "exp", System.currentTimeMillis() / 1000l + 80,
-                        "aud", "appstoreconnect-v1",
-                        "bid", bundleID
-                ))
+                .withPayload(payload)
                 .withHeader(Map.of(
                         "alg", "ES256",
                         "kid", privateKeyID,
@@ -57,6 +41,35 @@ public class JWTGenerator {
 
         return jwt;
     }
+
+    public String signJWT(Map<String, ?> payload) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeySpecException {
+        ECPrivateKey privateKey = getPrivateKey();
+
+        Algorithm algorithm = Algorithm.ECDSA256(null, privateKey);
+        String jwt = JWT.create()
+                .withPayload(payload)
+                .withHeader(Map.of(
+                        "alg", "ES256",
+                        "kid", privateKeyID,
+                        "typ", "JWT"
+                ))
+                .sign(algorithm);
+
+        return jwt;
+    }
+
+    private ECPrivateKey getPrivateKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] p8Key = Files.readAllBytes(Paths.get(jwsPath));
+
+        // Remove begin and end private key header and footer
+        String p8KeyStringRemovedHeaderFooterText = removeBeginEndPrivateKeyText(new String(p8Key));
+        byte[] p8KeyRemovedHeaderFooterText = p8KeyStringRemovedHeaderFooterText.getBytes();
+
+        PKCS8EncodedKeySpec p8EncodedKeySpec = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(p8KeyRemovedHeaderFooterText));
+
+        return (ECPrivateKey)KeyFactory.getInstance("EC").generatePrivate(p8EncodedKeySpec);
+    }
+
 
     private static String removeBeginEndPrivateKeyText(String decodedKey) {
         char headerFooterStartDelimiter = '-';

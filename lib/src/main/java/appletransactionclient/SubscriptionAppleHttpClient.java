@@ -1,6 +1,6 @@
 package appletransactionclient;
 
-import appletransactionclient.exception.AppStoreStatusResponseException;
+import appletransactionclient.exception.AppStoreErrorResponseException;
 import appletransactionclient.http.AppleHttpClient;
 import appletransactionclient.http.response.status.AppStoreStatusResponse;
 import appletransactionclient.http.response.status.error.AppStoreErrorResponse;
@@ -29,32 +29,33 @@ public class SubscriptionAppleHttpClient extends AppleHttpClient {
         this.getSubscriptionStatusURLPath = getSubscriptionStatusURLPath;
     }
 
-    public AppStoreStatusResponse getStatusResponseV1(Long transactionID, String jwt) throws IOException, InterruptedException, URISyntaxException, AppStoreStatusResponseException, UnrecoverableKeyException, CertificateException, KeyStoreException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public AppStoreStatusResponse getStatusResponseV1(Long transactionID, String jwt) throws IOException, InterruptedException, URISyntaxException, AppStoreErrorResponseException, UnrecoverableKeyException, CertificateException, KeyStoreException, NoSuchAlgorithmException, InvalidKeySpecException {
         // Try to do the request with baseURL and if not successful try again with sandboxURL
         try {
             // Get status response with the base url
-            Object statusResponse = getStatusResponseV1(transactionID, baseURL, getSubscriptionStatusURLPath, jwt);
+            return getStatusResponseV1(transactionID, baseURL, getSubscriptionStatusURLPath, jwt);
+        } catch (JsonMappingException e) {
+            // Just print out the stack trace and proceed to trying sandbox
+            System.out.println("Trying Sandbox, here's error information from trying with Prod:");
+            e.printStackTrace();
+        } catch (AppStoreErrorResponseException e) {
+            // If the error code is not TRANSACTION_ID_NOT_FOUND throw e, otherwise proceed to try with sandbox
+            if (e.getAppStoreErrorResponse().getErrorCode() == AppStoreErrorResponseCodes.INVALID_TRANSACTION_ID.getErrorCode()) {
+                System.out.println("Error code: " + e.getAppStoreErrorResponse().getErrorCode());
+                System.out.println("Doesn't match: " + AppStoreErrorResponseCodes.INVALID_TRANSACTION_ID.getErrorCode());
+                throw e;
+            }
 
-            // If statusResponse is AppStoreStatusResponse, return using cast
-            if (statusResponse instanceof AppStoreStatusResponse)
-                return (AppStoreStatusResponse)statusResponse;
-        } catch (JsonMappingException | AppStoreStatusResponseException e) {
-            // Just print the stack trace and proceed
+            System.out.println("Trying Sandbox, here's error information from trying with Prod:");
+            e.getAppStoreErrorResponse();
             e.printStackTrace();
         }
 
         // Since the statusResponse was not successful using the baseURL, try again with sandboxURL
-        Object statusResponse = getStatusResponseV1(transactionID, sandboxURL, getSubscriptionStatusURLPath, jwt);
-
-        // If statusResponse is AppStoreStatusResponse, return using cast
-        if (statusResponse instanceof AppStoreStatusResponse)
-            return (AppStoreStatusResponse)statusResponse;
-
-        // Otherwise, throw AppStoreStatusResponseException
-        throw new AppStoreStatusResponseException("Error getting response from Prod and Sandbox Apple Server...\n" + statusResponse.toString());
+        return getStatusResponseV1(transactionID, sandboxURL, getSubscriptionStatusURLPath, jwt);
     }
 
-    private Object getStatusResponseV1(Long transactionID, String url, String path, String jwt) throws URISyntaxException, IOException, InterruptedException, AppStoreStatusResponseException, UnrecoverableKeyException, CertificateException, KeyStoreException, NoSuchAlgorithmException, InvalidKeySpecException {
+    private AppStoreStatusResponse getStatusResponseV1(Long transactionID, String url, String path, String jwt) throws URISyntaxException, IOException, InterruptedException, AppStoreErrorResponseException {
         // Get transaction id and create path parameter
         String transactionIDPathParameter = "/" + transactionID;
 
@@ -76,14 +77,21 @@ public class SubscriptionAppleHttpClient extends AppleHttpClient {
 
             // If appStoreReceipt is null, throw AppStoreStatusResponseException
             if (appStoreStatusResponse == null)
-                throw new AppStoreStatusResponseException("AppStoreStatusResponse was null");
+                throw new AppStoreErrorResponseException("AppStoreStatusResponse was null", null);
 
             return appStoreStatusResponse;
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            // Try to parse error response, and throw it in AppStoreStatusResponseException
+            System.out.println(new ObjectMapper().writeValueAsString(response));
+            // TODO: Handle errors if necessary
+//            e.printStackTrace();
 
-            // There was an issue processing the JSON, so try processing it as an error response and returning the error
-            return new ObjectMapper().treeToValue(response, AppStoreErrorResponse.class);
+            try {
+                // There was an issue processing the JSON, so try processing it as an error response and returning as an AppStoreErrorResponse
+                throw new AppStoreErrorResponseException("Got error response...", new ObjectMapper().treeToValue(response, AppStoreErrorResponse.class));
+            } catch (JsonProcessingException errorResponseE) {
+                throw new AppStoreErrorResponseException("Error parsing AppStoreStatusResponse and AppStoreErrorResponse... " + new ObjectMapper().writeValueAsString(response), errorResponseE, null);
+            }
         }
 
     }

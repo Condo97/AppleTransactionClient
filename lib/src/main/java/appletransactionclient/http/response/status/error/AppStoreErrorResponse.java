@@ -3,7 +3,7 @@ package appletransactionclient.http.response.status.error;
 public class AppStoreErrorResponse {
 
     private String errorMessage;
-    private Integer errorCode;
+    private Long errorCode;
 
     public AppStoreErrorResponse() {
 
@@ -13,7 +13,7 @@ public class AppStoreErrorResponse {
         return errorMessage;
     }
 
-    public Integer getErrorCode() {
+    public Long getErrorCode() {
         return errorCode;
     }
 

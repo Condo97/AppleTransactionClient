@@ -1,5 +1,8 @@
 package appletransactionclient.http.response.status;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AppStoreStatusResponse {
 
     private String environment, bundleId;

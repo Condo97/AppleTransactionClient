@@ -76,8 +76,8 @@ public class SubscriptionAppleHttpClient extends AppleHttpClient {
             AppStoreStatusResponse appStoreStatusResponse = new ObjectMapper().treeToValue(response, AppStoreStatusResponse.class);
 
             // If appStoreReceipt is null, throw AppStoreStatusResponseException
-            if (appStoreStatusResponse == null)
-                throw new AppStoreErrorResponseException("AppStoreStatusResponse was null", null);
+            if (appStoreStatusResponse == null || appStoreStatusResponse.getData() == null)
+                throw new AppStoreErrorResponseException("AppStoreStatusResponse or data were null", null);
 
             return appStoreStatusResponse;
         } catch (JsonProcessingException e) {

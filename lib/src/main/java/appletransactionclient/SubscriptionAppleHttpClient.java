@@ -80,7 +80,7 @@ public class SubscriptionAppleHttpClient extends AppleHttpClient {
                 throw new AppStoreErrorResponseException("AppStoreStatusResponse or data were null", null);
 
             return appStoreStatusResponse;
-        } catch (JsonProcessingException e) {
+        } catch (JsonProcessingException | AppStoreErrorResponseException e) {
             // Try to parse error response, and throw it in AppStoreStatusResponseException
             System.out.println(new ObjectMapper().writeValueAsString(response));
             // TODO: Handle errors if necessary

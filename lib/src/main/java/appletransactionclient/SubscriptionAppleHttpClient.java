@@ -5,7 +5,6 @@ import appletransactionclient.http.AppleHttpClient;
 import appletransactionclient.http.response.status.AppStoreStatusResponse;
 import appletransactionclient.http.response.status.error.AppStoreErrorResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import httpson.Httpson;
@@ -34,8 +33,8 @@ public class SubscriptionAppleHttpClient extends AppleHttpClient {
         try {
             // Get status response with the base url
             return getStatusResponseV1(transactionID, baseURL, getSubscriptionStatusURLPath, jwt);
-        } catch (JsonMappingException e) {
-            // Just print out the stack trace and proceed to trying sandbox
+        } catch (JsonProcessingException e) {
+            // JSON parsing/mapping failed (e.g. Apple returned plaintext "Unauthenticated" on 401)
             System.out.println("Trying Sandbox, here's error information from trying with Prod:");
             e.printStackTrace();
         } catch (AppStoreErrorResponseException e) {
